@@ -30,27 +30,31 @@ createApp({
             if (this.speaker) formData.append('speaker', this.speaker);
 
             try {
-                const response = await fetch('/api/convert', {
+                await fetch('/api/convert', {
                     method: 'POST',
                     body: formData
+                }).then( (response) => {
+                    if (!response.ok) {
+                        const error = response.json();
+                        throw new Error(error.detail || 'Conversion failed');
+                    }
+
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const downloadTitle = (this.topic || '').replace(/[^a-zA-Z0-9\s]+/g, '').trim();
+                    const a = document.createElement('a');
+
+                    a.href = url;
+                    a.download = `${downloadTitle || 'output'}.mp3`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    this.showStatus('✓ Conversion successful! Download started.', 'success');
+                    this.loading = false;
                 });
 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || 'Conversion failed');
-                }
-
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${this.title || 'output'}.mp3`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-
-                this.showStatus('✓ Conversion successful! Download started.', 'success');
             } catch (error) {
                 this.showStatus(`Error: ${error.message}`, 'error');
             } finally {
