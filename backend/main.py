@@ -6,6 +6,7 @@ import tempfile
 import logging
 from typing import Optional
 from datetime import datetime;
+from dotenv import load_dotenv;
 
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 
@@ -18,8 +19,9 @@ from mutagen.mp3 import MP3
 
 from backend.env import get_env_file_variables
 
+
 ENV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
-CONFIG = get_env_file_variables(ENV_PATH)
+load_dotenv(ENV_PATH)
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -188,7 +190,7 @@ async def convert_audio(
     topic: str = Form(...),
     speaker: str = Form(default="Unknown Speaker"),
 ):
-    title = f"{topic}{CONFIG['TITLE_SUFFIX']}"
+    title = f"{topic}{os.environ['TITLE_SUFFIX']}"
 
     if not audioFile.filename:
         raise HTTPException(status_code=400, detail="Audio file required")
@@ -210,11 +212,11 @@ async def convert_audio(
         _write_id3_tags(
             mp3_out,
             title=title,
-            album=CONFIG['ALBUM'],
+            album=os.environ['ALBUM'],
             artist=speaker,
             year=str(datetime.now().year),
             track=None,
-            genre=CONFIG['GENRE'],
+            genre=os.environ['GENRE'],
             cover_path=cover_in,
             cover_mime=cover_mime,
         )
