@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Producer - MP3 Converter</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="file"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            cursor: pointer;
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .optional-fields {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .optional-header {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <h1>🎵 Audio Producer</h1>
+
+            <form @submit.prevent="convertAudio">
+                <div class="form-group">
+                    <label>Audio File <span class="required">*</span></label>
+                    <input type="file" @change="onAudioChange" accept="audio/*" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Cover Art <span class="required">*</span></label>
+                    <input type="file" @change="onCoverChange" accept="image/*" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Title <span class="required">*</span></label>
+                    <input type="text" v-model="title" required placeholder="Song title">
+                </div>
+
+                <div class="form-group">
+                    <label>Album <span class="required">*</span></label>
+                    <input type="text" v-model="album" required placeholder="Album name">
+                </div>
+
+                <div class="optional-fields">
+                    <div class="optional-header">Optional Fields</div>
+
+                    <div class="form-group">
+                        <label>Artist</label>
+                        <input type="text" v-model="artist" placeholder="Artist name">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Year</label>
+                        <input type="text" v-model="year" placeholder="e.g., 2024">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Track Number</label>
+                        <input type="text" v-model="track" placeholder="e.g., 1 or 1/12">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Genre</label>
+                        <input type="text" v-model="genre" placeholder="e.g., Pop, Rock">
+                    </div>
+                </div>
+
+                <button type="submit" :disabled="loading">
+                    <span v-if="!loading">Convert to MP3</span>
+                    <span v-else><span class="spinner"></span>Converting...</span>
+                </button>
+            </form>
+
+            <div v-if="status" :class="['status', statusType]">
+                {{ status }}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    audioFile: null,
+                    coverFile: null,
+                    title: '',
+                    album: '',
+                    artist: '',
+                    year: '',
+                    track: '',
+                    genre: '',
+                    loading: false,
+                    status: '',
+                    statusType: ''
+                };
+            },
+            methods: {
+                onAudioChange(event) {
+                    this.audioFile = event.target.files[0];
+                },
+                onCoverChange(event) {
+                    this.coverFile = event.target.files[0];
+                },
+                async convertAudio() {
+                    if (!this.audioFile || !this.coverFile) {
+                        this.showStatus('Please select both audio and cover art files', 'error');
+                        return;
+                    }
+
+                    this.loading = true;
+                    this.showStatus('Converting audio...', 'loading');
+
+                    const formData = new FormData();
+                    formData.append('audio', this.audioFile);
+                    formData.append('cover', this.coverFile);
+                    formData.append('title', this.title);
+                    formData.append('album', this.album);
+                    if (this.artist) formData.append('artist', this.artist);
+                    if (this.year) formData.append('year', this.year);
+                    if (this.track) formData.append('track', this.track);
+                    if (this.genre) formData.append('genre', this.genre);
+
+                    try {
+                        const response = await fetch('/api/convert', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.detail || 'Conversion failed');
+                        }
+
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${this.title || 'output'}.mp3`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+
+                        this.showStatus('✓ Conversion successful! Download started.', 'success');
+                    } catch (error) {
+                        this.showStatus(`Error: ${error.message}`, 'error');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                showStatus(message, type) {
+                    this.status = message;
+                    this.statusType = type;
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

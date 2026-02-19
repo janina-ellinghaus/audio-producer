@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  audio-producer:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend:/app/static
+    restart: unless-stopped
