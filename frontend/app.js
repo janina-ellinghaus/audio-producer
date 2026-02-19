@@ -33,7 +33,7 @@ createApp({
                 await fetch('/api/convert', {
                     method: 'POST',
                     body: formData
-                }).then( (response) => {
+                }).then( async (response) => {
                     if (!response.ok) {
                         const error = response.json();
                         throw new Error(error.detail || 'Conversion failed');
