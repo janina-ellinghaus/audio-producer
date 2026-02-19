@@ -3,10 +3,14 @@ import re
 import shutil
 import subprocess
 import tempfile
+import logging
 from typing import Optional
 
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
-from fastapi.responses import FileResponse
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -24,6 +28,7 @@ def _safe_filename(value: str, default: str = "output") -> str:
 
 
 def _run_ffmpeg(args: list[str], timeout_s: int = 60) -> None:
+    logger.debug(f"Running FFmpeg: {' '.join(args)}")
     try:
         proc = subprocess.run(
             args,
@@ -35,8 +40,10 @@ def _run_ffmpeg(args: list[str], timeout_s: int = 60) -> None:
     except subprocess.TimeoutExpired as e:
         raise HTTPException(status_code=504, detail="Transcode timed out") from e
 
+    logger.debug(f"FFmpeg return code: {proc.returncode}")
     if proc.returncode != 0:
         stderr = proc.stderr.decode("utf-8", errors="replace")[-4000:]
+        logger.error(f"FFmpeg failed: {stderr}")
         raise HTTPException(status_code=400, detail=f"FFmpeg failed: {stderr}")
 
 
@@ -111,9 +118,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-if os.path.isdir("static"):
-    app.mount("/", StaticFiles(directory="static", html=True), name="static")
-
 
 @app.post("/api/convert")
 async def convert_audio(
@@ -126,12 +130,15 @@ async def convert_audio(
     track: Optional[str] = Form(default=None),
     genre: Optional[str] = Form(default=None),
 ):
+    logger.info(f"Converting audio: title={title}, album={album}, audio={audio.filename}, cover={cover.filename}")
+
     if not audio.filename:
         raise HTTPException(status_code=400, detail="Audio file required")
     if not cover.filename:
         raise HTTPException(status_code=400, detail="Cover art required")
 
     tmpdir = tempfile.mkdtemp()
+    logger.debug(f"Created temp directory: {tmpdir}")
     try:
         audio_in = os.path.join(tmpdir, "input")
         cover_in = os.path.join(tmpdir, "cover")
@@ -139,8 +146,11 @@ async def convert_audio(
 
         with open(audio_in, "wb") as f:
             shutil.copyfileobj(audio.file, f)
+        logger.debug(f"Saved audio to {audio_in}, size: {os.path.getsize(audio_in)} bytes")
+
         with open(cover_in, "wb") as f:
             shutil.copyfileobj(cover.file, f)
+        logger.debug(f"Saved cover to {cover_in}, size: {os.path.getsize(cover_in)} bytes")
 
         _run_ffmpeg(
             [
@@ -153,6 +163,13 @@ async def convert_audio(
                 mp3_out,
             ]
         )
+
+        logger.debug(f"FFmpeg completed, checking output file: {mp3_out}")
+        if os.path.exists(mp3_out):
+            logger.debug(f"Output file exists, size: {os.path.getsize(mp3_out)} bytes")
+        else:
+            logger.error(f"Output file does not exist after FFmpeg conversion!")
+            raise HTTPException(status_code=500, detail="FFmpeg conversion failed to produce output file")
 
         cover_mime = _guess_cover_mime(cover.filename)
         _write_id3_tags(
@@ -168,12 +185,27 @@ async def convert_audio(
         )
 
         safe_name = _safe_filename(title, "output") + ".mp3"
-        return FileResponse(
-            mp3_out,
+
+        # Read the MP3 file into memory so we can delete the temp directory
+        with open(mp3_out, "rb") as f:
+            mp3_data = f.read()
+
+        logger.debug(f"Read MP3 data: {len(mp3_data)} bytes")
+        return StreamingResponse(
+            iter([mp3_data]),
             media_type="audio/mpeg",
-            filename=safe_name,
             headers={"Content-Disposition": f'attachment; filename="{safe_name}"'},
         )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Conversion error: {e}")
+        raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
     finally:
         if os.path.exists(tmpdir):
             shutil.rmtree(tmpdir)
+            logger.debug(f"Cleaned up temp directory: {tmpdir}")
+
+
+if os.path.isdir("static"):
+    app.mount("/", StaticFiles(directory="static", html=True), name="static")
