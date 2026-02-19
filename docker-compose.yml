@@ -7,6 +7,11 @@ services:
       - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
+      # Application configuration (override these with your values)
+      - ALBUM=My Podcast Album
+      - GENRE=Podcast
+      - TITLE_SUFFIX= - My Show
+      # - ORG=My Organization  # Currently unused
     volumes:
       - ./backend:/app/backend
       - ./frontend:/app/static
