@@ -15,10 +15,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from mutagen.id3 import ID3, APIC, TIT2, TALB, TPE1, TDRC, TRCK, TCON
 from mutagen.mp3 import MP3
-import env
+
+from backend.env import get_env_file_variables
 
 ENV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
-CONFIG=env.get_env_file_variables(ENV_PATH)
+CONFIG = get_env_file_variables(ENV_PATH)
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -187,7 +188,7 @@ async def convert_audio(
     topic: str = Form(...),
     speaker: str = Form(default="Unknown Speaker"),
 ):
-    title=str(topic + CONFIG['TITLE_SUFFIX']),
+    title = f"{topic}{CONFIG['TITLE_SUFFIX']}"
 
     if not audioFile.filename:
         raise HTTPException(status_code=400, detail="Audio file required")
