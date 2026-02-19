@@ -112,6 +112,8 @@ The application runs on port 8000 by default. To change:
 - Docker: Modify port mapping in `docker-compose.yml` or `docker run` command
 - Local: Use `--port` flag with uvicorn
 
+The `.env` file is expected at the project root (same directory as this README).
+
 ## Troubleshooting
 
 **FFmpeg not found**: Ensure FFmpeg is installed with libmp3lame support  
