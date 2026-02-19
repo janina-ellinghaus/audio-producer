@@ -10,6 +10,7 @@ COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ ./backend/
+COPY media/ ./media/
 COPY frontend/ ./static/
 
 EXPOSE 8000

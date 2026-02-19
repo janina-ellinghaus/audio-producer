@@ -5,17 +5,23 @@ import subprocess
 import tempfile
 import logging
 from typing import Optional
+from datetime import datetime;
 
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from mutagen.id3 import ID3, APIC, TIT2, TALB, TPE1, TDRC, TRCK, TCON
 from mutagen.mp3 import MP3
+import env
+
+ENV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
+CONFIG=env.get_env_file_variables(ENV_PATH)
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 def _safe_filename(value: str, default: str = "output") -> str:
@@ -108,6 +114,62 @@ def _write_id3_tags(
     tags.save(mp3_path, v2_version=3)
 
 
+def _save_upload_file(upload: UploadFile, dst_path: str) -> None:
+    with open(dst_path, "wb") as f:
+        shutil.copyfileobj(upload.file, f)
+
+
+def _resolve_cover_path(tmpdir: str) -> str:
+    cover_in = os.path.join(tmpdir, "cover")
+    default_cover_path = "./media/default_cover.jpg"
+    if os.path.exists(default_cover_path):
+        shutil.copy2(default_cover_path, cover_in)
+        logger.debug(f"Using default cover from {default_cover_path}")
+        return cover_in
+
+    raise HTTPException(status_code=500, detail="Default cover art not found")
+
+
+def _convert_to_mp3(audio_in: str, mp3_out: str) -> None:
+    _run_ffmpeg(
+        [
+            "ffmpeg",
+            "-y",
+            "-i",
+            audio_in,
+            "-vn",
+            "-c:a",
+            "libmp3lame",
+            "-q:a",
+            "2",
+            mp3_out,
+        ]
+    )
+
+    logger.debug(f"FFmpeg completed, checking output file: {mp3_out}")
+    if os.path.exists(mp3_out):
+        logger.debug(f"Output file exists, size: {os.path.getsize(mp3_out)} bytes")
+        return
+
+    logger.error("Output file does not exist after FFmpeg conversion!")
+    raise HTTPException(status_code=500, detail="FFmpeg conversion failed to produce output file")
+
+
+def _build_mp3_response(mp3_out: str, title: str) -> StreamingResponse:
+    safe_name = _safe_filename(title, "output") + ".mp3"
+
+    # Read the MP3 file into memory so we can delete the temp directory
+    with open(mp3_out, "rb") as f:
+        mp3_data = f.read()
+
+    logger.debug(f"Read MP3 data: {len(mp3_data)} bytes")
+    return StreamingResponse(
+        iter([mp3_data]),
+        media_type="audio/mpeg",
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}"'},
+    )
+
+
 app = FastAPI()
 
 app.add_middleware(
@@ -121,89 +183,41 @@ app.add_middleware(
 
 @app.post("/api/convert")
 async def convert_audio(
-    audio: UploadFile = File(...),
-    cover: Optional[UploadFile] = File(default=None),
-    title: str = Form(...),
-    album: str = Form(...),
-    artist: str = Form(default="Unknown Artist"),
-    year: Optional[str] = Form(default=None),
-    track: Optional[str] = Form(default=None),
-    genre: Optional[str] = Form(default=None),
+    audioFile: UploadFile = File(...),
+    topic: str = Form(...),
+    speaker: str = Form(default="Unknown Speaker"),
 ):
-    cover_filename = cover.filename if cover else "default"
-    logger.info(f"Converting audio: title={title}, album={album}, audio={audio.filename}, cover={cover_filename}")
+    title=str(topic + CONFIG['TITLE_SUFFIX']),
 
-    if not audio.filename:
+    if not audioFile.filename:
         raise HTTPException(status_code=400, detail="Audio file required")
 
     tmpdir = tempfile.mkdtemp()
     logger.debug(f"Created temp directory: {tmpdir}")
     try:
         audio_in = os.path.join(tmpdir, "input")
-        cover_in = os.path.join(tmpdir, "cover")
         mp3_out = os.path.join(tmpdir, "output.mp3")
 
-        with open(audio_in, "wb") as f:
-            shutil.copyfileobj(audio.file, f)
+        _save_upload_file(audioFile, audio_in)
         logger.debug(f"Saved audio to {audio_in}, size: {os.path.getsize(audio_in)} bytes")
 
-        # Use default cover if none provided
-        if cover and cover.filename:
-            with open(cover_in, "wb") as f:
-                shutil.copyfileobj(cover.file, f)
-            logger.debug(f"Saved cover to {cover_in}, size: {os.path.getsize(cover_in)} bytes")
-        else:
-            default_cover_path = "./media/default_cover.jpg"
-            if os.path.exists(default_cover_path):
-                shutil.copy2(default_cover_path, cover_in)
-                logger.debug(f"Using default cover from {default_cover_path}")
-            else:
-                raise HTTPException(status_code=500, detail="Default cover art not found")
+        cover_in = _resolve_cover_path(tmpdir)
 
-        _run_ffmpeg(
-            [
-                "ffmpeg",
-                "-y",
-                "-i", audio_in,
-                "-vn",
-                "-c:a", "libmp3lame",
-                "-q:a", "2",
-                mp3_out,
-            ]
-        )
+        _convert_to_mp3(audio_in, mp3_out)
 
-        logger.debug(f"FFmpeg completed, checking output file: {mp3_out}")
-        if os.path.exists(mp3_out):
-            logger.debug(f"Output file exists, size: {os.path.getsize(mp3_out)} bytes")
-        else:
-            logger.error(f"Output file does not exist after FFmpeg conversion!")
-            raise HTTPException(status_code=500, detail="FFmpeg conversion failed to produce output file")
-
-        cover_mime = _guess_cover_mime(cover.filename if cover else "default_cover.jpg")
+        cover_mime = _guess_cover_mime("default_cover.jpg")
         _write_id3_tags(
             mp3_out,
             title=title,
-            album=album,
-            artist=artist,
-            year=year,
-            track=track,
-            genre=genre,
+            album=CONFIG['ALBUM'],
+            artist=speaker,
+            year=str(datetime.now().year),
+            track=None,
+            genre=CONFIG['GENRE'],
             cover_path=cover_in,
             cover_mime=cover_mime,
         )
-
-        safe_name = _safe_filename(title, "output") + ".mp3"
-
-        # Read the MP3 file into memory so we can delete the temp directory
-        with open(mp3_out, "rb") as f:
-            mp3_data = f.read()
-
-        logger.debug(f"Read MP3 data: {len(mp3_data)} bytes")
-        return StreamingResponse(
-            iter([mp3_data]),
-            media_type="audio/mpeg",
-            headers={"Content-Disposition": f'attachment; filename="{safe_name}"'},
-        )
+        return _build_mp3_response(mp3_out, title)
     except HTTPException:
         raise
     except Exception as e:

@@ -4,13 +4,8 @@ createApp({
     data() {
         return {
             audioFile: null,
-            coverFile: null,
-            title: '',
-            album: '',
-            artist: '',
-            year: '',
-            track: '',
-            genre: '',
+            topic: '',
+            speaker: '',
             loading: false,
             status: '',
             statusType: ''
@@ -19,9 +14,6 @@ createApp({
     methods: {
         onAudioChange(event) {
             this.audioFile = event.target.files[0];
-        },
-        onCoverChange(event) {
-            this.coverFile = event.target.files[0];
         },
         async convertAudio() {
             if (!this.audioFile) {
@@ -33,14 +25,9 @@ createApp({
             this.showStatus('Converting audio...', 'loading');
 
             const formData = new FormData();
-            formData.append('audio', this.audioFile);
-            formData.append('title', this.title);
-            formData.append('album', this.album);
-            if (this.coverFile) formData.append('cover', this.coverFile);
-            if (this.artist) formData.append('artist', this.artist);
-            if (this.year) formData.append('year', this.year);
-            if (this.track) formData.append('track', this.track);
-            if (this.genre) formData.append('genre', this.genre);
+            formData.append('audioFile', this.audioFile);
+            formData.append('topic', this.topic);
+            if (this.speaker) formData.append('speaker', this.speaker);
 
             try {
                 const response = await fetch('/api/convert', {

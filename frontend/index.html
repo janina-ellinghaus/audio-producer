@@ -20,42 +20,13 @@
 
 
                 <div class="form-group">
-                    <label>Title <span class="required">*</span></label>
-                    <input type="text" v-model="title" required placeholder="Song title">
+                    <label>Topic <span class="required">*</span></label>
+                    <input type="text" v-model="topic" required placeholder="Episode topic">
                 </div>
 
                 <div class="form-group">
-                    <label>Album <span class="required">*</span></label>
-                    <input type="text" v-model="album" required placeholder="Album name">
-                </div>
-
-                <div class="optional-fields">
-                    <div class="optional-header">Optional Fields</div>
-
-                    <div class="form-group">
-                        <label>Cover Art</label>
-                        <input type="file" @change="onCoverChange" accept="image/*">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Artist</label>
-                        <input type="text" v-model="artist" placeholder="Artist name">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Year</label>
-                        <input type="text" v-model="year" placeholder="e.g., 2024">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Track Number</label>
-                        <input type="text" v-model="track" placeholder="e.g., 1 or 1/12">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Genre</label>
-                        <input type="text" v-model="genre" placeholder="e.g., Pop, Rock">
-                    </div>
+                    <label>Speaker</label>
+                    <input type="text" v-model="speaker" placeholder="Speaker name">
                 </div>
 
                 <button type="submit" :disabled="loading">
