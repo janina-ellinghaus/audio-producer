@@ -17,8 +17,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from mutagen.id3 import ID3, APIC, TIT2, TALB, TPE1, TDRC, TRCK, TCON
 from mutagen.mp3 import MP3
 
-from backend.env import get_env_file_variables
-
 
 ENV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
 load_dotenv(ENV_PATH)
