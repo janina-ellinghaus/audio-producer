@@ -122,7 +122,7 @@ app.add_middleware(
 @app.post("/api/convert")
 async def convert_audio(
     audio: UploadFile = File(...),
-    cover: UploadFile = File(...),
+    cover: Optional[UploadFile] = File(default=None),
     title: str = Form(...),
     album: str = Form(...),
     artist: str = Form(default="Unknown Artist"),
@@ -130,12 +130,11 @@ async def convert_audio(
     track: Optional[str] = Form(default=None),
     genre: Optional[str] = Form(default=None),
 ):
-    logger.info(f"Converting audio: title={title}, album={album}, audio={audio.filename}, cover={cover.filename}")
+    cover_filename = cover.filename if cover else "default"
+    logger.info(f"Converting audio: title={title}, album={album}, audio={audio.filename}, cover={cover_filename}")
 
     if not audio.filename:
         raise HTTPException(status_code=400, detail="Audio file required")
-    if not cover.filename:
-        raise HTTPException(status_code=400, detail="Cover art required")
 
     tmpdir = tempfile.mkdtemp()
     logger.debug(f"Created temp directory: {tmpdir}")
@@ -148,9 +147,18 @@ async def convert_audio(
             shutil.copyfileobj(audio.file, f)
         logger.debug(f"Saved audio to {audio_in}, size: {os.path.getsize(audio_in)} bytes")
 
-        with open(cover_in, "wb") as f:
-            shutil.copyfileobj(cover.file, f)
-        logger.debug(f"Saved cover to {cover_in}, size: {os.path.getsize(cover_in)} bytes")
+        # Use default cover if none provided
+        if cover and cover.filename:
+            with open(cover_in, "wb") as f:
+                shutil.copyfileobj(cover.file, f)
+            logger.debug(f"Saved cover to {cover_in}, size: {os.path.getsize(cover_in)} bytes")
+        else:
+            default_cover_path = "./media/default_cover.jpg"
+            if os.path.exists(default_cover_path):
+                shutil.copy2(default_cover_path, cover_in)
+                logger.debug(f"Using default cover from {default_cover_path}")
+            else:
+                raise HTTPException(status_code=500, detail="Default cover art not found")
 
         _run_ffmpeg(
             [
@@ -171,7 +179,7 @@ async def convert_audio(
             logger.error(f"Output file does not exist after FFmpeg conversion!")
             raise HTTPException(status_code=500, detail="FFmpeg conversion failed to produce output file")
 
-        cover_mime = _guess_cover_mime(cover.filename)
+        cover_mime = _guess_cover_mime(cover.filename if cover else "default_cover.jpg")
         _write_id3_tags(
             mp3_out,
             title=title,

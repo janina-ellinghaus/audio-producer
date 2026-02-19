@@ -18,10 +18,6 @@
                     <input type="file" @change="onAudioChange" accept="audio/*" required>
                 </div>
 
-                <div class="form-group">
-                    <label>Cover Art <span class="required">*</span></label>
-                    <input type="file" @change="onCoverChange" accept="image/*" required>
-                </div>
 
                 <div class="form-group">
                     <label>Title <span class="required">*</span></label>
@@ -35,6 +31,11 @@
 
                 <div class="optional-fields">
                     <div class="optional-header">Optional Fields</div>
+
+                    <div class="form-group">
+                        <label>Cover Art</label>
+                        <input type="file" @change="onCoverChange" accept="image/*">
+                    </div>
 
                     <div class="form-group">
                         <label>Artist</label>

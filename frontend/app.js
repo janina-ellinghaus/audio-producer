@@ -24,8 +24,8 @@ createApp({
             this.coverFile = event.target.files[0];
         },
         async convertAudio() {
-            if (!this.audioFile || !this.coverFile) {
-                this.showStatus('Please select both audio and cover art files', 'error');
+            if (!this.audioFile) {
+                this.showStatus('Please select an audio file', 'error');
                 return;
             }
 
@@ -34,9 +34,9 @@ createApp({
 
             const formData = new FormData();
             formData.append('audio', this.audioFile);
-            formData.append('cover', this.coverFile);
             formData.append('title', this.title);
             formData.append('album', this.album);
+            if (this.coverFile) formData.append('cover', this.coverFile);
             if (this.artist) formData.append('artist', this.artist);
             if (this.year) formData.append('year', this.year);
             if (this.track) formData.append('track', this.track);
