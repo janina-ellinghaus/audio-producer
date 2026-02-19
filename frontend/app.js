@@ -23,49 +23,53 @@ createApp({
         onCoverChange(event) {
             this.coverFile = event.target.files[0];
         },
-        async convertAudio() {
-            if (!this.audioFile || !this.coverFile) {
-                this.showStatus(
-                    "Please select both audio and cover art files",
-                    "error",
-                );
-                return;
-            }
-
-            this.loading = true;
-            this.showStatus("Converting audio...", "loading");
-
+        buildFormData() {
             const formData = new FormData();
             formData.append("audio", this.audioFile);
             formData.append("cover", this.coverFile);
             formData.append("title", this.title);
             formData.append("album", this.album);
+
             if (this.artist) formData.append("artist", this.artist);
             if (this.year) formData.append("year", this.year);
             if (this.track) formData.append("track", this.track);
             if (this.genre) formData.append("genre", this.genre);
 
+            return formData;
+        },
+        async callConversionApi(formData) {
+            const response = await fetch("/api/convert", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || "Conversion failed");
+            }
+
+            return await response.blob();
+        },
+        downloadFile(blob, filename) {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        },
+        async convertAudio() {
+            this.loading = true;
+            this.showStatus("Converting audio...", "loading");
+
             try {
-                const response = await fetch("/api/convert", {
-                    method: "POST",
-                    body: formData,
-                });
+                const formData = this.buildFormData();
+                const blob = await this.callConversionApi(formData);
+                const filename = `${this.title || "output"}.mp3`;
 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || "Conversion failed");
-                }
-
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `${this.title || "output"}.mp3`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-
+                this.downloadFile(blob, filename);
                 this.showStatus(
                     "✓ Conversion successful! Download started.",
                     "success",
