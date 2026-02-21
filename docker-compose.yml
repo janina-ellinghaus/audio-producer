@@ -13,4 +13,5 @@ services:
     volumes:
       - ./backend:/app/backend
       - ./frontend:/app/static
+      - ./secrets:/etc/secrets
     restart: unless-stopped

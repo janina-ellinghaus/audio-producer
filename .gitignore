@@ -19,3 +19,4 @@ ENV/
 *.m4a
 tmp/
 .vscode
+/secrets
