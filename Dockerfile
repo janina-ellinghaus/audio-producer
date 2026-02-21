@@ -20,6 +20,12 @@ COPY media/ ./media/
 COPY frontend/ ./static/
 COPY .en[v] ./
 
+# debugging only
+RUN mkdir -p /tmp/secrets/
+COPY ./tmp/placeholder600x600.png /tmp
+RUN base64 < /tmp/placeholder600x600.png > /tmp/secrets/cover.png.base64
+
+
 EXPOSE 8000
 
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
