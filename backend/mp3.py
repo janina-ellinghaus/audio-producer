@@ -62,7 +62,6 @@ def write_id3_tags(
     album: str,
     artist: str,
     year: Optional[str],
-    track: Optional[str],
     genre: Optional[str],
     cover_path: str,
     cover_mime: str,
@@ -97,10 +96,6 @@ def write_id3_tags(
     if year:
         tags.delall("TDRC")
         tags.add(TDRC(encoding=3, text=year))
-
-    if track:
-        tags.delall("TRCK")
-        tags.add(TRCK(encoding=3, text=track))
 
     if genre:
         tags.delall("TCON")

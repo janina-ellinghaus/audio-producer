@@ -12,10 +12,25 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend import mp3, file, log
 
-ENV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
-load_dotenv(ENV_PATH)
 
 logger = log.getLogger(__name__)
+app = FastAPI()
+
+def main():
+    ENV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
+    load_dotenv(ENV_PATH)
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    if os.path.isdir("static"):
+        app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
 
 
 def _build_mp3_response(mp3_out: str, title: str) -> StreamingResponse:
@@ -32,16 +47,6 @@ def _build_mp3_response(mp3_out: str, title: str) -> StreamingResponse:
         headers={"Content-Disposition": f'attachment; filename="{safe_name}"'},
     )
 
-
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 
 @app.post("/api/convert")
@@ -75,7 +80,6 @@ async def convert_audio(
             album=os.environ['ALBUM'],
             artist=speaker,
             year=str(datetime.now().year),
-            track=None,
             genre=os.environ['GENRE'],
             cover_path=cover_in,
             cover_mime=cover_mime,
@@ -92,5 +96,4 @@ async def convert_audio(
             logger.debug(f"Cleaned up temp directory: {tmpdir}")
 
 
-if os.path.isdir("static"):
-    app.mount("/", StaticFiles(directory="static", html=True), name="static")
+main()
