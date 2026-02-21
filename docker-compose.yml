@@ -6,8 +6,13 @@ services:
     ports:
       - "8000:8000"
     environment:
+
+      ## ensure, python output is written to console directly
       - PYTHONUNBUFFERED=1
+
+      # stop polluting mounted directories with __pycache__/**
       - PYTHONPYCACHEPREFIX=/tmp/pythonpycache
+
       ## Application configuration (override these with your values)
       # - ALBUM="My Podcast Album"
       # - GENRE=Podcast
