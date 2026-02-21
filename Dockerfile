@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.14.3-slim-trixie@sha256:486b8092bfb12997e10d4920897213a06563449c951c5506c2a2cfaf591c599f
 
 RUN apt-get update && apt-get install -y \
     ffmpeg \
@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ ./backend/
 COPY media/ ./media/
 COPY frontend/ ./static/
-COPY .env ./
+COPY .en[v] ./
 
 EXPOSE 8000
 

@@ -108,11 +108,46 @@ python -m http.server 8080
 - OR: Python 3.11+, FFmpeg with libmp3lame (for local development)
 
 ## Configuration
+
+### Environment Variables
+
+The application can be configured using environment variables or a `.env` file. Environment variables take precedence over `.env` file values.
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `ALBUM` | Yes | Album name for ID3 tags | `"My Podcast"` |
+| `GENRE` | Yes | Genre for ID3 tags | `"Podcast"` |
+| `TITLE_SUFFIX` | Yes | Suffix appended to episode titles | `" - My Show"` |
+
+**Example with Docker Compose:**
+```yaml
+environment:
+  - ALBUM=My Podcast Album
+  - GENRE=Podcast
+  - TITLE_SUFFIX= - My Show
+```
+
+**Example with Docker run:**
+```bash
+docker run -p 8000:8000 \
+  -e ALBUM="My Podcast" \
+  -e GENRE="Podcast" \
+  -e TITLE_SUFFIX=" - My Show" \
+  audio-producer
+```
+
+**Example with .env file:**
+Create a `.env` file in the project root:
+```
+ALBUM=My Podcast
+GENRE=Podcast
+TITLE_SUFFIX= - My Show
+```
+
+### Port Configuration
 The application runs on port 8000 by default. To change:
 - Docker: Modify port mapping in `docker-compose.yml` or `docker run` command
 - Local: Use `--port` flag with uvicorn
-
-The `.env` file is expected at the project root (same directory as this README).
 
 ## Troubleshooting
 
