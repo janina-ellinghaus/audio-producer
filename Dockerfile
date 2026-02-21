@@ -1,5 +1,11 @@
 FROM python:3.14.3-slim-trixie@sha256:486b8092bfb12997e10d4920897213a06563449c951c5506c2a2cfaf591c599f
 
+## ensure, that python output is written to console directly
+ENV PYTHONUNBUFFERED=1
+
+# stop polluting mounted directories with __pycache__/**
+ENV PYTHONPYCACHEPREFIX=/tmp/pythonpycache
+
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
