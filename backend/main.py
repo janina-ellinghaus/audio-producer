@@ -53,7 +53,7 @@ def _build_mp3_response(mp3_out: str, title: str) -> StreamingResponse:
 async def convert_audio(
     audioFile: UploadFile = File(...),
     topic: str = Form(...),
-    speaker: str = Form(default="Unknown Speaker"),
+    speaker: str = Form(default="Unknown"),
 ):
     title = f"{topic}{os.environ['TITLE_SUFFIX']}"
 
