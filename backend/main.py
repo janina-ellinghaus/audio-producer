@@ -64,7 +64,6 @@ async def convert_audio(
     title=f"{topic}{os.environ['TITLE_SUFFIX']}"
     audio_in = os.path.join(tmpdir, "input")
     mp3_out = os.path.join(tmpdir, "output.mp3")
-    cover_in = file.resolve_cover_path(tmpdir)
 
     try:
         file.save_upload_file(audioFile, audio_in)
@@ -78,8 +77,6 @@ async def convert_audio(
             artist=speaker,
             year=str(datetime.now().year),
             genre=os.environ['GENRE'],
-            cover_path=cover_in,
-            cover_mime=file.guess_cover_mime(cover_in),
         )
         return _build_mp3_response(mp3_out, title)
     except HTTPException:

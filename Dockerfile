@@ -6,9 +6,11 @@ ENV PYTHONUNBUFFERED=1
 # stop polluting mounted directories with __pycache__/**
 ENV PYTHONPYCACHEPREFIX=/tmp/pythonpycache
 
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update
+RUN apt-get install -y ffmpeg
+# supply "mimetype" executable
+RUN apt-get install -y libfile-mimeinfo-perl
+RUN rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

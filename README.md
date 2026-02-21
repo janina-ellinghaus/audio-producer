@@ -58,6 +58,12 @@ those can be passed using
 - `docker run -e Key=Value -e AnotherKey=AnotherValue ...` 
 - `.env` file in the project root. 
 
+### Files
+
+Mount or copy files into `/tmp/secrets/`:
+
+- Cover image: `cover.*` contains a base64 encoded image or binary image to be embedded as cover image into the audio files.
+
 
 ## Troubleshooting
 

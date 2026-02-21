@@ -7,7 +7,7 @@ from mutagen.id3 import ID3
 from mutagen.id3._frames import APIC, TIT2, TALB, TPE1, TDRC, TRCK, TCON
 from mutagen.mp3 import MP3
 
-from backend import log
+from backend import log, file
 logger = log.getLogger(__name__)
 
 
@@ -64,8 +64,6 @@ def write_id3_tags(
     artist: str,
     year: Optional[str],
     genre: Optional[str],
-    cover_path: str,
-    cover_mime: str,
 ) -> None:
     MP3(mp3_path).save()
 
@@ -76,13 +74,7 @@ def write_id3_tags(
 
     tags.delall("APIC")
     tags.add(
-        APIC(
-            encoding=3,
-            mime=cover_mime,
-            type=3,
-            desc="Cover",
-            data=open(cover_path, "rb").read(),
-        )
+        get_id3_cover_tag()
     )
 
     tags.delall("TIT2")
@@ -103,3 +95,14 @@ def write_id3_tags(
         tags.add(TCON(encoding=3, text=genre))
 
     tags.save(mp3_path, v2_version=3)
+
+
+def get_id3_cover_tag():
+    (cover_data, cover_mime) = file.get_cover_image()
+    return APIC(
+        encoding=3,
+        mime=cover_mime,
+        type=3,
+        desc="Cover",
+        data=cover_data
+    )
