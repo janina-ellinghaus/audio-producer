@@ -18,3 +18,4 @@ ENV/
 *.flac
 *.m4a
 tmp/
+.vscode
