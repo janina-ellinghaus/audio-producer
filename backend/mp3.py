@@ -6,7 +6,11 @@ from fastapi import HTTPException
 from mutagen.id3 import ID3, APIC, TIT2, TALB, TPE1, TDRC, TRCK, TCON
 from mutagen.mp3 import MP3
 
-def _run_ffmpeg(args: list[str], logger, timeout_s: int = 60) -> None:
+from backend import log
+logger = log.getLogger(__name__)
+
+
+def _run_ffmpeg(args: list[str], timeout_s: int = 60) -> None:
     logger.debug(f"Running FFmpeg: {' '.join(args)}")
     try:
         proc = subprocess.run(
@@ -26,7 +30,7 @@ def _run_ffmpeg(args: list[str], logger, timeout_s: int = 60) -> None:
         raise HTTPException(status_code=400, detail=f"FFmpeg failed: {stderr}")
 
 
-def convert_to_mp3(audio_in: str, mp3_out: str, logger) -> None:
+def convert_to_mp3(audio_in: str, mp3_out: str) -> None:
     _run_ffmpeg(
         [
             "ffmpeg",
@@ -40,7 +44,6 @@ def convert_to_mp3(audio_in: str, mp3_out: str, logger) -> None:
             "2",
             mp3_out,
         ],
-        logger,
     )
 
     logger.debug(f"FFmpeg completed, checking output file: {mp3_out}")

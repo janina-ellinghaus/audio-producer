@@ -1,12 +1,8 @@
 import os
-import re
 import shutil
-import subprocess
 import tempfile
-import logging
-from typing import Optional
-from datetime import datetime;
-from dotenv import load_dotenv;
+from datetime import datetime
+from dotenv import load_dotenv
 
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 
@@ -14,54 +10,16 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-import backend.mp3
+from backend import mp3, file, log
 
 ENV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
 load_dotenv(ENV_PATH)
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
-
-def _safe_filename(value: str, default: str = "output") -> str:
-    value = (value or "").strip()
-    if not value:
-        return default
-    value = re.sub(r"[^\w\-. ]+", "_", value, flags=re.UNICODE).strip()
-    value = re.sub(r"\s+", " ", value)
-    return value[:120] or default
-
-
-
-
-def _guess_cover_mime(filename: str) -> str:
-    f = (filename or "").lower()
-    if f.endswith(".png"):
-        return "image/png"
-    return "image/jpeg"
-
-
-
-
-def _save_upload_file(upload: UploadFile, dst_path: str) -> None:
-    with open(dst_path, "wb") as f:
-        shutil.copyfileobj(upload.file, f)
-
-
-def _resolve_cover_path(tmpdir: str) -> str:
-    cover_in = os.path.join(tmpdir, "cover")
-    default_cover_path = "./media/default_cover.jpg"
-    if os.path.exists(default_cover_path):
-        shutil.copy2(default_cover_path, cover_in)
-        logger.debug(f"Using default cover from {default_cover_path}")
-        return cover_in
-
-    raise HTTPException(status_code=500, detail="Default cover art not found")
-
+logger = log.getLogger(__name__)
 
 
 def _build_mp3_response(mp3_out: str, title: str) -> StreamingResponse:
-    safe_name = _safe_filename(title, "output") + ".mp3"
+    safe_name = file.safe_filename(title, "output") + ".mp3"
 
     # Read the MP3 file into memory so we can delete the temp directory
     with open(mp3_out, "rb") as f:
@@ -103,15 +61,15 @@ async def convert_audio(
         audio_in = os.path.join(tmpdir, "input")
         mp3_out = os.path.join(tmpdir, "output.mp3")
 
-        _save_upload_file(audioFile, audio_in)
+        file.save_upload_file(audioFile, audio_in)
         logger.debug(f"Saved audio to {audio_in}, size: {os.path.getsize(audio_in)} bytes")
 
-        cover_in = _resolve_cover_path(tmpdir)
+        cover_in = file.resolve_cover_path(tmpdir)
 
-        backend.mp3.convert_to_mp3(audio_in, mp3_out, logger)
+        mp3.convert_to_mp3(audio_in, mp3_out)
 
-        cover_mime = _guess_cover_mime("default_cover.jpg")
-        backend.mp3.write_id3_tags(
+        cover_mime = file.guess_cover_mime("default_cover.jpg")
+        mp3.write_id3_tags(
             mp3_out,
             title=title,
             album=os.environ['ALBUM'],
