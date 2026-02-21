@@ -8,9 +8,9 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       ## Application configuration (override these with your values)
-      # - ALBUM=My Podcast Album
+      # - ALBUM="My Podcast Album"
       # - GENRE=Podcast
-      # - TITLE_SUFFIX= · My Show
+      # - TITLE_SUFFIX=" · My Show"
     volumes:
       - ./backend:/app/backend
       - ./frontend:/app/static
