@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -55,25 +55,22 @@ async def convert_audio(
     topic: str = Form(...),
     speaker: str = Form(default="Unknown"),
 ):
-    title = f"{topic}{os.environ['TITLE_SUFFIX']}"
-
     if not audioFile.filename:
         raise HTTPException(status_code=400, detail="Audio file required")
 
     tmpdir = tempfile.mkdtemp()
     logger.debug(f"Created temp directory: {tmpdir}")
-    try:
-        audio_in = os.path.join(tmpdir, "input")
-        mp3_out = os.path.join(tmpdir, "output.mp3")
 
+    title=f"{topic}{os.environ['TITLE_SUFFIX']}"
+    audio_in = os.path.join(tmpdir, "input")
+    mp3_out = os.path.join(tmpdir, "output.mp3")
+    cover_in = file.resolve_cover_path(tmpdir)
+
+    try:
         file.save_upload_file(audioFile, audio_in)
         logger.debug(f"Saved audio to {audio_in}, size: {os.path.getsize(audio_in)} bytes")
 
-        cover_in = file.resolve_cover_path(tmpdir)
-
         mp3.convert_to_mp3(audio_in, mp3_out)
-
-        cover_mime = file.guess_cover_mime("default_cover.jpg")
         mp3.write_id3_tags(
             mp3_out,
             title=title,
@@ -82,7 +79,7 @@ async def convert_audio(
             year=str(datetime.now().year),
             genre=os.environ['GENRE'],
             cover_path=cover_in,
-            cover_mime=cover_mime,
+            cover_mime=file.guess_cover_mime(cover_in),
         )
         return _build_mp3_response(mp3_out, title)
     except HTTPException:
