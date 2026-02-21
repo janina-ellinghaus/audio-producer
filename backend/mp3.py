@@ -3,7 +3,8 @@ import os.path
 from typing import Optional
 
 from fastapi import HTTPException
-from mutagen.id3 import ID3, APIC, TIT2, TALB, TPE1, TDRC, TRCK, TCON
+from mutagen.id3 import ID3
+from mutagen.id3._frames import APIC, TIT2, TALB, TPE1, TDRC, TRCK, TCON
 from mutagen.mp3 import MP3
 
 from backend import log
