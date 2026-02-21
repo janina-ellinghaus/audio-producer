@@ -1,5 +1,9 @@
 # Audio Producer
 
+## Warning ⚠️
+
+Potentially bad maintained, vibe coding project for the devs personal use ahead!
+
 ## Purpose
 A web service that accepts audio file uploads, converts them to high-quality MP3 format, adds ID3 tags with metadata, and returns the file for download.
 
