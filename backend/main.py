@@ -78,6 +78,7 @@ async def convert_audio(
             mp3_out,
             title=title,
             album=os.environ['ALBUM'],
+            album_artist=os.environ['ALBUM_ARTIST'],
             artist=speaker,
             year=str(datetime.now().year),
             genre=os.environ['GENRE'],
