@@ -3,7 +3,7 @@ import os.path
 from typing import Optional
 
 from fastapi import HTTPException
-from mutagen.id3 import ID3, APIC, TIT2, TALB, TPE1, TDRC, TRCK, TCON
+from mutagen.id3 import ID3, APIC, TIT2, TALB, TPE1, TPE2, TDRC, TRCK, TCON
 from mutagen.mp3 import MP3
 
 from backend import log
@@ -61,8 +61,8 @@ def write_an_id3_tag(
     mutable_tags,
 ):
     tag = spec_function(encoding=3, text=value)
-    mutable_tags.delall(t.function.__name__)
-    mutable_tags.add(tag_instance)
+    mutable_tags.delall(spec_function.__name__)
+    mutable_tags.add(tag)
 
 
 def write_id3_tags(
