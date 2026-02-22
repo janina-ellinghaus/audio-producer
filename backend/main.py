@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 import tempfile
 from datetime import datetime
@@ -16,6 +17,10 @@ ENV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env")
 
 load_dotenv(ENV_PATH)
 logger = log.getLogger(__name__)
+
+if( os.environ['MODE'] == 'dev'):
+    sys.dont_write_bytecode = True
+    logger.info('Enabled dev mode.')
 
 app = FastAPI()
 app.add_middleware(
