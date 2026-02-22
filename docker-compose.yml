@@ -1,17 +1,24 @@
-version: '3.8'
-
+# Use this compose file for active development activities.
 services:
   audio-producer:
     build: .
     ports:
       - "8000:8000"
-    environment:
-      - PYTHONUNBUFFERED=1
+    env_file:
+      - .env.dev
       ## Application configuration (override these with your values)
       # - ALBUM="My Podcast Album"
       # - GENRE=Podcast
       # - TITLE_SUFFIX=" · My Show"
     volumes:
-      - ./backend:/app/backend
-      - ./frontend:/app/static
+      - ./tmp/cover.jpg:/app/media/default_cover.jpg
     restart: unless-stopped
+    develop:
+      # enable with `docker compose up --watch`
+      watch:
+        - path: ./backend
+          action: sync+restart
+          target: /app/backend
+        - path: ./frontend
+          action: sync
+          target: /app/static
