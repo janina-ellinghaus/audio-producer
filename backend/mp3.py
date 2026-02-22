@@ -55,12 +55,23 @@ def convert_to_mp3(audio_in: str, mp3_out: str) -> None:
     raise HTTPException(status_code=500, detail="FFmpeg conversion failed to produce output file")
 
 
+def write_an_id3_tag(
+    value,
+    spec_function,
+    mutable_tags,
+):
+    tag = spec_function(encoding=3, text=value)
+    mutable_tags.delall(t.function.__name__)
+    mutable_tags.add(tag_instance)
+
+
 def write_id3_tags(
     mp3_path: str,
     *,
     title: str,
     album: str,
     artist: str,
+    album_artist: str,
     year: Optional[str],
     genre: Optional[str],
     cover_path: str,
@@ -73,6 +84,18 @@ def write_id3_tags(
     except Exception:
         tags = ID3()
 
+    write_an_id3_tag(title, TIT2, tags)
+    write_an_id3_tag(album, TALB, tags)
+    write_an_id3_tag(artist, TPE1, tags)
+    write_an_id3_tag(album_artist, TPE2, tags)
+
+    if year:
+        write_an_id3_tag(year, TDRC, tags)
+
+    if genre:
+        write_an_id3_tag(genre, TCON, tags)
+
+    # write cover image
     tags.delall("APIC")
     tags.add(
         APIC(
@@ -83,22 +106,5 @@ def write_id3_tags(
             data=open(cover_path, "rb").read(),
         )
     )
-
-    tags.delall("TIT2")
-    tags.add(TIT2(encoding=3, text=title))
-
-    tags.delall("TALB")
-    tags.add(TALB(encoding=3, text=album))
-
-    tags.delall("TPE1")
-    tags.add(TPE1(encoding=3, text=artist))
-
-    if year:
-        tags.delall("TDRC")
-        tags.add(TDRC(encoding=3, text=year))
-
-    if genre:
-        tags.delall("TCON")
-        tags.add(TCON(encoding=3, text=genre))
 
     tags.save(mp3_path, v2_version=3)
