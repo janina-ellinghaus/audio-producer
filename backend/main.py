@@ -12,25 +12,22 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend import mp3, file, log
 
+ENV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
+load_dotenv(ENV_PATH)
 logger = log.getLogger(__name__)
+
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-def main():
-    ENV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
-    load_dotenv(ENV_PATH)
-
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    if os.path.isdir("static"):
-        app.mount("/", StaticFiles(directory="static", html=True), name="static")
-
+if os.path.isdir("static"):
+    app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 
 def _build_mp3_response(mp3_out: str, title: str) -> StreamingResponse:
@@ -73,7 +70,7 @@ async def convert_audio(
 
         mp3.convert_to_mp3(audio_in, mp3_out)
 
-        cover_mime = file.guess_cover_mime("default_cover.jpg")
+        cover_mime = file.guess_cover_mime("./media/default_cover.jpg")
         mp3.write_id3_tags(
             mp3_out,
             title=title,
@@ -97,4 +94,3 @@ async def convert_audio(
             logger.debug(f"Cleaned up temp directory: {tmpdir}")
 
 
-main()
