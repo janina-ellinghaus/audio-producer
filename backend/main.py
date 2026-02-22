@@ -26,9 +26,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-if os.path.isdir("static"):
-    app.mount("/", StaticFiles(directory="static", html=True), name="static")
-
 
 def _build_mp3_response(mp3_out: str, title: str) -> StreamingResponse:
     safe_name = file.safe_filename(title, "output") + ".mp3"
@@ -93,4 +90,6 @@ async def convert_audio(
             shutil.rmtree(tmpdir)
             logger.debug(f"Cleaned up temp directory: {tmpdir}")
 
-
+# needs to be mounted last, so /api/convert can return 200
+if os.path.isdir("static"):
+    app.mount("/", StaticFiles(directory="static", html=True), name="static")
