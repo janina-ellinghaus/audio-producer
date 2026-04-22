@@ -18,7 +18,7 @@ ENV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env")
 load_dotenv(ENV_PATH)
 logger = log.getLogger(__name__)
 
-if( os.environ['MODE'] == 'dev'):
+if( os.getenv('MODE') == 'dev'):
     sys.dont_write_bytecode = True
     logger.info('Enabled dev mode.')
 
